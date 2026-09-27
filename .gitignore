@@ -15,5 +15,8 @@ __pycache__/
 .coverage
 htmlcov/
 
+# Local editor settings
+.vscode/
+
 # macOS metadata
 .DS_Store
