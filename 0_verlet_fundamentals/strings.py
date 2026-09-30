@@ -16,7 +16,7 @@ radius = 3
 e = 0.8
 rest_length = 8
 
-N = 30
+N = 170
 particle_pos, particle_old_pos, vel = [], [], []
 def initialize_particles(N: int, particle_pos: list, particle_old_pos: list, vel: list):
     for index in range(N):
@@ -92,10 +92,10 @@ while running:
         apply_distance_constrains(particle_pos=particle_pos)
 
     # Collition detection for X-axis
-    # apply_collision(width_x, width_y, particle_pos, particle_old_pos, vel, radius, e)
+    apply_collision(width_x, width_y, particle_pos, particle_old_pos, vel, radius, e)
 
-    for index in range(N):
-        pg.draw.circle(screen, "white", particle_pos[index], radius)
+    # for index in range(N):
+    #     pg.draw.circle(screen, "white", particle_pos[index], radius)
 
     for index in range(len(particle_pos)-1):
         pg.draw.line(screen, "white", particle_pos[index], particle_pos[index+1], 1)

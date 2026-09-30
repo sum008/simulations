@@ -1,51 +1,37 @@
 import pygame as pg
-from random import randint
 
 pg.init()
-width_x, width_y = 900, 800
-screen = pg.display.set_mode((width_x, width_y))
+WIDTH, HEIGHT = 900, 800
+screen = pg.display.set_mode((WIDTH, HEIGHT))
 clock = pg.time.Clock()
-running = True
+font = pg.font.Font(None, 24)
 
-# particle_pos = pg.Vector2(70, 30)
-# particle_old_pos = pg.Vector2(65, 15)
 gravity = pg.Vector2(0, 50)
 wind = pg.Vector2(0, 0)
-# vel = pg.Vector2(15,15)
 dt = 1 / 60
-radius = 2
-e = 0.8
-rest_length = 5
-dis = rest_length
+REST_LENGTH = 5
+ROWS = 50
+COLUMNS = 50
+SOLVER_ITERATIONS = 9
+CONSTRAINT_STIFFNESS = 0.8
+RUNNING = True
 
-M = 70
-N = 70
-particle_pos, particle_old_pos, vel = [], [], []
-def initialize_particles(particle_pos: list, particle_old_pos: list, vel: list):
-    dis_y=0
-    for i in range(M):
-        v, pp, pop = [], [], []
-        base_x, base_y, dis_x = 20, 20, 0
-        for j in range(N):
-            pop.append(pg.Vector2(base_x+dis_x, base_y+dis_y))
-            v.append(pg.Vector2(0, 0))
-            # pop.append(pg.Vector2(pp[j].x - v[j].x, pp[j].y - v[j].y))
-            pp.append(pg.Vector2(base_x+dis_x, base_y+dis_y))
-            dis_x+=dis
-            
-        dis_y+=dis
-        dis_x=dis
-        vel.append(v)
-        particle_pos.append(pp)
-        particle_old_pos.append(pop)
+particle_pos, particle_old_pos = [], []
 
 
-initialize_particles(particle_pos=particle_pos, particle_old_pos=particle_old_pos, vel=vel)
-print(len(particle_pos), len(particle_pos[0]))
+def initialize_particles():
+    for i in range(ROWS):
+        positions, old_positions = [], []
+        for j in range(COLUMNS):
+            position = pg.Vector2(20 + j * REST_LENGTH, 20 + i * REST_LENGTH)
+            positions.append(position)
+            old_positions.append(position.copy())
+        particle_pos.append(positions)
+        particle_old_pos.append(old_positions)
 
 def apply_collision(width_x, width_y, particle_pos: list, particle_old_pos: list, vel, radius, e):
-    for i in range(M):
-        for j in range(N):
+    for i in range(ROWS):
+        for j in range(COLUMNS):
             if particle_pos[i][j].x >= width_x - radius:
                 particle_pos[i][j].x = width_x - radius
                 particle_old_pos[i][j].x = particle_pos[i][j].x + e * vel[i][j].x
@@ -60,101 +46,99 @@ def apply_collision(width_x, width_y, particle_pos: list, particle_old_pos: list
                 particle_pos[i][j].y = radius
                 particle_old_pos[i][j].y = particle_pos[i][j].y + e * vel[i][j].y
 
-    # return particle_old_pos, particle_pos
 
-def apply_verlet(particle_pos: list, particle_old_pos: list, gravity, vel, dt):
-    for i in range(M):
-        for j in range(N):
-            vel[i][j].x = particle_pos[i][j].x - particle_old_pos[i][j].x
-            vel[i][j].y = particle_pos[i][j].y - particle_old_pos[i][j].y
+def apply_verlet():
+    for i in range(ROWS):
+        for j in range(COLUMNS):
+            current_position = particle_pos[i][j]
+            velocity = current_position - particle_old_pos[i][j]
+            particle_old_pos[i][j] = current_position.copy()
+            particle_pos[i][j] = (
+                current_position + velocity + wind + gravity * dt**2
+            )
 
-            particle_old_pos[i][j] = particle_pos[i][j].copy()
-            particle_pos[i][j].x = particle_old_pos[i][j].x + vel[i][j].x + wind.x
-            particle_pos[i][j].y = particle_old_pos[i][j].y + vel[i][j].y + gravity.y * dt**2
-    # return particle_old_pos, particle_pos
 
-def constraint_correction(particle_pos, a, b, c, d, constraint_lenght=rest_length, stiffness=1.0):
+def constraint_correction(
+    a, b, c, d, constraint_length=REST_LENGTH, stiffness=1.0
+):
     delta = particle_pos[a][b] - particle_pos[c][d]
     distance = particle_pos[a][b].distance_to(particle_pos[c][d])
     if distance != 0:
-        diff = (distance - constraint_lenght) / distance #total length that is changed from rest_length
-        correction = delta * diff #total correction percentage
-        particle_pos[a][b] -= correction * 0.5 * stiffness
-        particle_pos[c][d] += correction * 0.5 * stiffness
+        diff = (distance - constraint_length) / distance
+        correction = delta * diff * stiffness
+        particle_pos[a][b] -= correction * 0.5
+        particle_pos[c][d] += correction * 0.5
 
-def apply_bending_constraints(particle_pos):
-    bend_length = rest_length * 2
-    for i in range(M):
-        for j in range(N):
-            # horizontal bending
-            if j + 2 < N:
-                constraint_correction(particle_pos,i, j, i, j + 2, bend_length, stiffness=0.3)
 
-            # vertical bending
-            if i + 2 < M:
-                constraint_correction(particle_pos, i, j, i + 2, j, bend_length, stiffness=0.3)
-    
+def apply_distance_constraints(stiffness):
+    for i in range(ROWS):
+        for j in range(COLUMNS):
+            if j + 1 < COLUMNS:
+                constraint_correction(i, j, i, j + 1, stiffness=stiffness)
+            if i + 1 < ROWS:
+                constraint_correction(i, j, i + 1, j, stiffness=stiffness)
 
-def apply_distance_constrains(particle_pos: list[pg.Vector2]):
-    for i in range(M):
-        for j in range(N):
-            #right
-            if j+1<N:
-                constraint_correction(particle_pos, i, j, i, j+1, rest_length)
 
-            #down
-            if i+1<M:
-                constraint_correction(particle_pos, i, j, i+1, j, rest_length)
+def pin_corners(corners):
+    for row, column, position in corners:
+        particle_pos[row][column] = position
+        particle_old_pos[row][column] = position.copy()
 
                 
-mouse_pos=pg.Vector2(0,0)
-while running:
+initialize_particles()
+
+mouse_pos = pg.Vector2(0, 0)
+while RUNNING:
     for event in pg.event.get():
         if event.type == pg.QUIT:
-            running = False
+            RUNNING = False
+        elif event.type == pg.KEYDOWN:
+            if event.key == pg.K_LEFTBRACKET:
+                CONSTRAINT_STIFFNESS = max(0.05, CONSTRAINT_STIFFNESS - 0.05)
+            elif event.key == pg.K_RIGHTBRACKET:
+                CONSTRAINT_STIFFNESS = min(1.0, CONSTRAINT_STIFFNESS + 0.05)
 
     screen.fill("black")
-    # Verlet integration
-    apply_verlet(particle_pos, particle_old_pos, gravity, vel, dt)
+    pg.display.set_caption(
+        f"Verlet Cloth - stiffness: {CONSTRAINT_STIFFNESS:.2f} ([ / ])"
+    )
+    apply_verlet()
 
-    for i in range(5):
-        # Apply distance constraint
-        apply_distance_constrains(particle_pos)
-        # apply_bending_constraints(particle_pos)
+    mouse_pressed = pg.mouse.get_pressed()[0]
+    if mouse_pressed:
+        mouse_pos = pg.Vector2(pg.mouse.get_pos())
 
-        if pg.mouse.get_pressed()[0]:
-            mouse_pos = pg.Vector2(pg.mouse.get_pos())
-    
-            particle_pos[M-1][N-1] = mouse_pos
-            particle_old_pos[M-1][N-1] = mouse_pos
-    
-            # particle_pos[0][N-1] = pg.Vector2(mouse_pos.x + rest_length * (N - 1), mouse_pos.y)
-            # particle_old_pos[0][N-1] = pg.Vector2(mouse_pos.x + rest_length * (N - 1), mouse_pos.y)
-            
-        particle_pos[0][0] = pg.Vector2(100, 100)
-        particle_old_pos[0][0] = particle_pos[0][0].copy()
+    cloth_width = REST_LENGTH * (COLUMNS - 1)
+    cloth_height = REST_LENGTH * (ROWS - 1)
+    bottom_right = pg.Vector2(100 + cloth_width, 100 + cloth_height)
+    if mouse_pressed:
+        bottom_right = mouse_pos
 
-        particle_pos[0][N-1] = pg.Vector2(
-            100 + rest_length * (N - 1),
-            100
-        )
-        particle_old_pos[0][N-1] = particle_pos[0][N-1].copy()
-         
+    top_left = bottom_right - pg.Vector2(cloth_width, cloth_height)
+    top_right = bottom_right - pg.Vector2(0, cloth_height)
+    bottom_left = bottom_right - pg.Vector2(cloth_width, 0)
+    corners = (
+        (0, 0, top_left),
+        (0, COLUMNS - 1, top_right),
+        (ROWS - 1, 0, bottom_left),
+        (ROWS - 1, COLUMNS - 1, bottom_right),
+    )
 
-    # apply_collision(width_x, width_y, particle_pos, particle_old_pos, vel, radius, e)
+    for _ in range(SOLVER_ITERATIONS):
+        apply_distance_constraints(CONSTRAINT_STIFFNESS)
+        pin_corners(corners)
 
-    for i in range(M):
-        for j in range(N):
-            if j + 1 < N:
+    for i in range(ROWS):
+        for j in range(COLUMNS):
+            if j + 1 < COLUMNS:
                 pg.draw.line(screen, "gray", particle_pos[i][j], particle_pos[i][j + 1], 1)
-            if i + 1 < M:
+            if i + 1 < ROWS:
                 pg.draw.line(screen, "gray", particle_pos[i][j], particle_pos[i + 1][j], 1)
-            # pg.draw.circle(screen, "white", particle_pos[i][j], radius)
 
-    # for i in range(M):
-    #     for j in range(N):
-    #         pg.draw.line(screen, "white", particle_pos[i][j], particle_pos[index+1], 1)
-
+    clock.tick(90)
+    fps = clock.get_fps()
+    fps_text = font.render(f"FPS: {fps:.1f}", True, "white")
+    screen.blit(fps_text, (10, 10))
     pg.display.flip()
-    clock.tick(60)
+
 pg.quit()
