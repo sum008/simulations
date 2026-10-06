@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 500" role="img" aria-labelledby="title description">
+  <title id="title">Animated segment tree range query</title>
+  <desc id="description">The query for array range two through seven is answered by combining tree segments two through four, four through six, and six through seven.</desc>
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #203239; }
+      .title { font-size: 20px; font-weight: 700; }
+      .label { font-size: 13px; }
+      .small { font-size: 11px; }
+      .muted { fill: #63777b; }
+      .edge { stroke: #9aaba7; stroke-width: 1.5; }
+      .node rect { fill: #fbfcf8; stroke: #b9c8c3; stroke-width: 1.5; rx: 7; }
+      .node.selected rect { stroke: #d18036; stroke-width: 2; }
+      .node.selected rect {
+        animation: select 3.9s infinite;
+      }
+      .result { fill: #fbfcf8; stroke: #cbd6d1; stroke-width: 1.5; rx: 6; }
+      .query-cell { fill: #f4d7b5; stroke: #d18036; stroke-width: 1.5; }
+      @keyframes select {
+        0%, 8%, 100% { fill: #fbfcf8; stroke-width: 2; }
+        18%, 32% { fill: #f4d7b5; stroke-width: 4; }
+      }
+      .node.selected.first rect { animation-delay: 0s; }
+      .node.selected.second rect { animation-delay: 1.3s; }
+      .node.selected.third rect { animation-delay: 2.6s; }
+    </style>
+  </defs>
+  <rect width="940" height="500" rx="8" fill="#edf2ee" />
+  <text class="title" x="28" y="35">Segment tree: answer one range query using stored pieces</text>
+  <text class="label muted" x="28" y="58">Each node stores the sum for the interval written inside it.</text>
+
+  <line class="edge" x1="465" y1="91" x2="245" y2="143" />
+  <line class="edge" x1="465" y1="91" x2="685" y2="143" />
+  <line class="edge" x1="245" y1="179" x2="135" y2="228" />
+  <line class="edge" x1="245" y1="179" x2="355" y2="228" />
+  <line class="edge" x1="685" y1="179" x2="575" y2="228" />
+  <line class="edge" x1="685" y1="179" x2="795" y2="228" />
+
+  <line class="edge" x1="135" y1="264" x2="80" y2="310" />
+  <line class="edge" x1="135" y1="264" x2="190" y2="310" />
+  <line class="edge" x1="355" y1="264" x2="300" y2="310" />
+  <line class="edge" x1="355" y1="264" x2="410" y2="310" />
+  <line class="edge" x1="575" y1="264" x2="520" y2="310" />
+  <line class="edge" x1="575" y1="264" x2="630" y2="310" />
+  <line class="edge" x1="795" y1="264" x2="740" y2="310" />
+  <line class="edge" x1="795" y1="264" x2="850" y2="310" />
+
+  <g class="node" transform="translate(420 72)"><rect width="90" height="38"/><text class="small" x="45" y="15" text-anchor="middle">[0,8)</text><text class="label" x="45" y="31" text-anchor="middle">24</text></g>
+  <g class="node" transform="translate(200 143)"><rect width="90" height="38"/><text class="small" x="45" y="15" text-anchor="middle">[0,4)</text><text class="label" x="45" y="31" text-anchor="middle">10</text></g>
+  <g class="node" transform="translate(640 143)"><rect width="90" height="38"/><text class="small" x="45" y="15" text-anchor="middle">[4,8)</text><text class="label" x="45" y="31" text-anchor="middle">14</text></g>
+  <g class="node" transform="translate(90 228)"><rect width="90" height="38"/><text class="small" x="45" y="15" text-anchor="middle">[0,2)</text><text class="label" x="45" y="31" text-anchor="middle">3</text></g>
+  <g class="node selected first" transform="translate(310 228)"><rect width="90" height="38"/><text class="small" x="45" y="15" text-anchor="middle">[2,4)</text><text class="label" x="45" y="31" text-anchor="middle">7</text></g>
+  <g class="node selected second" transform="translate(530 228)"><rect width="90" height="38"/><text class="small" x="45" y="15" text-anchor="middle">[4,6)</text><text class="label" x="45" y="31" text-anchor="middle">7</text></g>
+  <g class="node" transform="translate(750 228)"><rect width="90" height="38"/><text class="small" x="45" y="15" text-anchor="middle">[6,8)</text><text class="label" x="45" y="31" text-anchor="middle">7</text></g>
+
+  <g class="node" transform="translate(42 310)"><rect width="76" height="38"/><text class="small" x="38" y="15" text-anchor="middle">[0,1)</text><text class="label" x="38" y="31" text-anchor="middle">2</text></g>
+  <g class="node" transform="translate(152 310)"><rect width="76" height="38"/><text class="small" x="38" y="15" text-anchor="middle">[1,2)</text><text class="label" x="38" y="31" text-anchor="middle">1</text></g>
+  <g class="node" transform="translate(262 310)"><rect width="76" height="38"/><text class="small" x="38" y="15" text-anchor="middle">[2,3)</text><text class="label" x="38" y="31" text-anchor="middle">3</text></g>
+  <g class="node" transform="translate(372 310)"><rect width="76" height="38"/><text class="small" x="38" y="15" text-anchor="middle">[3,4)</text><text class="label" x="38" y="31" text-anchor="middle">4</text></g>
+  <g class="node" transform="translate(482 310)"><rect width="76" height="38"/><text class="small" x="38" y="15" text-anchor="middle">[4,5)</text><text class="label" x="38" y="31" text-anchor="middle">5</text></g>
+  <g class="node" transform="translate(592 310)"><rect width="76" height="38"/><text class="small" x="38" y="15" text-anchor="middle">[5,6)</text><text class="label" x="38" y="31" text-anchor="middle">2</text></g>
+  <g class="node selected third" transform="translate(702 310)"><rect width="76" height="38"/><text class="small" x="38" y="15" text-anchor="middle">[6,7)</text><text class="label" x="38" y="31" text-anchor="middle">1</text></g>
+  <g class="node" transform="translate(812 310)"><rect width="76" height="38"/><text class="small" x="38" y="15" text-anchor="middle">[7,8)</text><text class="label" x="38" y="31" text-anchor="middle">6</text></g>
+
+  <text class="label" x="28" y="377">Query [2,7): add the three complete pieces below.</text>
+  <rect class="result" x="28" y="395" width="170" height="46" />
+  <text class="label" x="113" y="424" text-anchor="middle">[2,4) = 7</text>
+  <text class="title muted" x="211" y="425">+</text>
+  <rect class="result" x="240" y="395" width="170" height="46" />
+  <text class="label" x="325" y="424" text-anchor="middle">[4,6) = 7</text>
+  <text class="title muted" x="423" y="425">+</text>
+  <rect class="result" x="452" y="395" width="170" height="46" />
+  <text class="label" x="537" y="424" text-anchor="middle">[6,7) = 1</text>
+  <text class="title muted" x="635" y="425">=</text>
+  <rect class="result" x="666" y="395" width="120" height="46" />
+  <text class="label" x="726" y="424" text-anchor="middle">total 15</text>
+  <text class="small muted" x="28" y="473">A query [left, right) includes left and stops just before right.</text>
+</svg>

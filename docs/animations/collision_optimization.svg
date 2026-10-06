@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 330" role="img" aria-labelledby="title description">
+  <title id="title">Collision broad-phase choices</title>
+  <desc id="description">Three animated panels compare a spatial grid, sweep-and-prune intervals, and an AABB tree that skips a distant branch.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#526a70" />
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #203239; }
+      .title { font-size: 17px; font-weight: 700; }
+      .label { font-size: 12px; }
+      .muted { fill: #63777b; }
+      .panel { fill: #fbfcf8; stroke: #cbd6d1; stroke-width: 1.5; }
+      .grid { stroke: #bccac5; stroke-width: 1; }
+      .hot { fill: #f4d7b5; stroke: #d18036; stroke-width: 2; }
+      .object { fill: #287b83; fill-opacity: 0.82; }
+      .query { fill: #d85e4c; fill-opacity: 0.15; stroke: #d85e4c; stroke-width: 2; }
+      .pulse { animation: pulse 3.6s infinite; }
+      .late { animation-delay: 1.2s; }
+      .later { animation-delay: 2.4s; }
+      @keyframes pulse {
+        0%, 9%, 100% { opacity: 0.2; }
+        18%, 34% { opacity: 1; }
+      }
+    </style>
+  </defs>
+  <rect width="1020" height="330" rx="8" fill="#edf2ee" />
+
+  <rect class="panel" x="10" y="10" width="326" height="310" rx="7" />
+  <text class="title" x="28" y="40">1. Spatial hash</text>
+  <text class="label muted" x="28" y="60">Check nearby grid cells</text>
+  <g transform="translate(48 82)">
+    <path class="grid" d="M0 0H250M0 55H250M0 110H250M0 165H250M0 0V165M62.5 0V165M125 0V165M187.5 0V165M250 0V165" />
+    <rect class="hot pulse" x="62.5" y="55" width="62.5" height="55" />
+    <circle class="object" cx="85" cy="78" r="9" />
+    <circle class="object" cx="104" cy="94" r="8" />
+    <circle class="object" cx="202" cy="28" r="7" />
+    <circle class="object" cx="220" cy="140" r="9" />
+    <circle class="query" cx="95" cy="87" r="24" />
+  </g>
+  <text class="label muted" x="28" y="276">Best for many similarly sized particles.</text>
+
+  <rect class="panel" x="347" y="10" width="326" height="310" rx="7" />
+  <text class="title" x="365" y="40">2. Sweep-and-prune</text>
+  <text class="label muted" x="365" y="60">Sort intervals along one axis</text>
+  <line x1="382" y1="218" x2="638" y2="218" stroke="#526a70" stroke-width="2" />
+  <text class="label muted" x="378" y="239">left</text>
+  <text class="label muted" x="617" y="239">right</text>
+  <rect class="object" x="400" y="93" width="90" height="22" rx="5" />
+  <rect class="object" x="448" y="133" width="110" height="22" rx="5" />
+  <rect class="object" x="570" y="173" width="52" height="22" rx="5" />
+  <rect class="query" x="452" y="88" width="103" height="73" rx="5" />
+  <line x1="382" y1="80" x2="382" y2="203" stroke="#d18036" stroke-width="3">
+    <animate attributeName="x1" values="382;638;382" dur="3.6s" repeatCount="indefinite" />
+    <animate attributeName="x2" values="382;638;382" dur="3.6s" repeatCount="indefinite" />
+  </line>
+  <text class="label muted" x="365" y="276">Best when objects move smoothly frame to frame.</text>
+
+  <rect class="panel" x="684" y="10" width="326" height="310" rx="7" />
+  <text class="title" x="702" y="40">3. AABB tree (BVH)</text>
+  <text class="label muted" x="702" y="60">Skip whole boxes that cannot overlap</text>
+  <line x1="847" y1="105" x2="773" y2="151" stroke="#9aaba7" stroke-width="2" />
+  <line x1="847" y1="105" x2="922" y2="151" stroke="#9aaba7" stroke-width="2" />
+  <rect x="812" y="78" width="70" height="38" rx="7" fill="#fbfcf8" stroke="#287b83" stroke-width="2" />
+  <text class="label" x="847" y="102" text-anchor="middle">root</text>
+  <rect x="714" y="143" width="116" height="50" rx="7" fill="#e4eae7" stroke="#aebbb7" stroke-width="2" />
+  <text class="label muted" x="772" y="174" text-anchor="middle">skip branch</text>
+  <rect x="865" y="143" width="116" height="50" rx="7" fill="#fbfcf8" stroke="#287b83" stroke-width="2" />
+  <text class="label" x="923" y="174" text-anchor="middle">test branch</text>
+  <rect class="query pulse later" x="882" y="149" width="82" height="36" rx="5" />
+  <text class="label muted" x="702" y="226">Best for static meshes or mixed object sizes.</text>
+  <text class="label muted" x="702" y="247">Rebuild or refit when objects move.</text>
+</svg>
