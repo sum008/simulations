@@ -361,26 +361,198 @@ Relaxation is not a promise of exact global correctness after a fixed number of 
 
 ## 6. A fast approximate constraint correction
 
-Computing a square root for every constraint can be expensive in a large simulation. The paper describes an approximation that avoids the square root when a constraint is already near its rest length.
+Computing a square root for every constraint can be expensive in a large simulation. The paper describes a cheaper approximation that avoids the square root when the pair is already near its rest length.
 
-With `delta = b - a` and rest length `L`, replace the exact equal-mass correction with:
+Let:
+
+- `delta = b - a`
+- `distance_squared = delta.length_squared()`
+- `rest_squared = rest_length * rest_length`
+- `denominator = distance_squared + rest_squared`
+
+Then the approximate correction is:
 
 ```python
-def satisfy_distance_approx(a, b, rest_length):
+correction = delta * (1.0 - 2.0 * rest_squared / denominator)
+```
+
+This looks difficult, but it is easier if we simplify the factor.
+
+The part inside the parentheses is:
+
+```python
+1.0 - 2.0 * rest_squared / (distance_squared + rest_squared)
+```
+
+That is the same as:
+
+```python
+(distance_squared - rest_squared) / (distance_squared + rest_squared)
+```
+
+So the expression is really:
+
+```python
+factor = (distance_squared - rest_squared) / (distance_squared + rest_squared)
+correction = delta * factor
+```
+
+This is much easier to read.
+
+### What the factor is doing
+
+The factor tells us how far the current length is from the desired length.
+
+- If `distance_squared == rest_squared`, the factor is `0`.
+- If the points are too far apart, `distance_squared > rest_squared`, so the factor is positive.
+- If the points are too close, `distance_squared < rest_squared`, so the factor is negative.
+
+That means:
+
+- too long → correction pulls the points together
+- too short → correction pushes them apart
+- exact length → do nothing
+
+This is exactly what a distance constraint should do.
+
+### Why does it become zero at the correct length?
+
+When the current distance is the target distance:
+
+```python
+distance_squared = rest_squared
+```
+
+Then:
+
+```python
+(distance_squared - rest_squared) / (distance_squared + rest_squared)
+= (rest_squared - rest_squared) / (rest_squared + rest_squared)
+= 0
+```
+
+So:
+
+```python
+correction = delta * 0 = 0
+```
+
+No movement happens. That is the whole point of a constraint: if the pair is already correct, leave it alone.
+
+### Why does the sign change?
+
+The sign tells us direction.
+
+- If the pair is stretched, the factor is positive, so the correction moves the particles in the direction of `delta` and closes the gap.
+- If the pair is compressed, the factor is negative, so the correction reverses direction and pushes the particles apart.
+
+So the correction is not random. It is a measure of how much the current separation differs from the target separation.
+
+### Why this is a useful approximation
+
+The exact solver would calculate:
+
+```python
+distance = sqrt(delta.length_squared())
+```
+
+then use that value to correct the pair. That is more accurate but more expensive. The approximation instead uses squared distances only, which is cheaper and often good enough for cloth and particle systems.
+
+This is a trade-off:
+
+- lower cost
+- simpler arithmetic
+- less precision than an exact solver
+
+The paper's key idea is not “never use square roots.” It is that sometimes a cheap approximation is enough for a stable simulation.
+
+### The full approximate solver
+
+```python
+def satisfy_distance_approx(
+    a,
+    b,
+    rest_length,
+    inverse_mass_a=1.0,
+    inverse_mass_b=1.0,
+):
     delta = b - a
     distance_squared = delta.length_squared()
     rest_squared = rest_length * rest_length
     denominator = distance_squared + rest_squared
+    total_inverse_mass = inverse_mass_a + inverse_mass_b
 
-    if denominator == 0.0:
+    if denominator == 0.0 or total_inverse_mass == 0.0:
         return a, b
 
-    correction = delta * (rest_squared / denominator - 0.5)
-    return a - correction, b + correction
+    factor = (distance_squared - rest_squared) / (distance_squared + rest_squared)
+    correction = delta * factor
+    move_a = correction * (inverse_mass_a / total_inverse_mass)
+    move_b = correction * (inverse_mass_b / total_inverse_mass)
+    return a + move_a, b - move_b
 ```
 
-When the distance equals the rest length, the multiplier is zero, so no correction occurs. Near the correct distance, this is close to the exact correction. Far from the rest length it is only an approximation, so it may converge differently and should be tested for the particular simulation. Modern hardware may also make the square root inexpensive compared with memory access; measure before optimizing.
+Here is what each step means:
 
-The paper's central lesson is not “never use square roots.” It is that a known near-correct answer can sometimes be used to build a cheaper approximation, trading some precision for speed.
+1. `delta = b - a` gives the vector between the two points.
+2. `distance_squared` is the current squared distance.
+3. `rest_squared` is the desired squared distance.
+4. The factor tells us how much the current length should change.
+5. `inverse_mass_a / total_inverse_mass` and `inverse_mass_b / total_inverse_mass` split the correction according to mass.
+6. The function returns the corrected positions.
+
+### Worked example
+
+Let:
+
+- `a = (0, 0)`
+- `b = (12, 0)`
+- `rest_length = 10`
+
+Then:
+
+```text
+delta = (12, 0)
+distance_squared = 12 * 12 = 144
+rest_squared = 10 * 10 = 100
+denominator = 144 + 100 = 244
+```
+
+The factor becomes:
+
+```text
+1 - 2 * 100 / 244 = 1 - 200 / 244 = 0.18033
+```
+
+So:
+
+```text
+correction = (12, 0) * 0.18033 = (2.164, 0)
+```
+
+With equal masses, each point moves half of that correction. The result is a smaller gap, closer to the rest length. It does not become exactly `10` in one pass, because this is only an approximation.
+
+```mermaid
+flowchart LR
+    FAR[a and b are 12 units apart] -->|approximate correction| CLOSER[distance gets closer to 10]
+    CLOSER -->|next solver pass| TARGET[rest length reached more closely]
+```
+
+### Unequal masses
+
+If one particle is heavier, it should move less. That is why inverse mass is used:
+
+```python
+inverse_mass_a = 1.0 / mass_a
+inverse_mass_b = 1.0 / mass_b
+```
+
+A larger mass gives a smaller inverse mass, so the heavier particle moves less. A fixed particle has inverse mass `0.0`, so it does not move at all.
+
+The important idea is simple:
+
+> The correction is computed once, then shared between the endpoints according to their inverse masses.
+
+This keeps the solver stable while still respecting different masses.
 
 ---
