@@ -17,9 +17,17 @@ class Particle:
         self.__apply_inverse_mass()
 
     def __apply_inverse_mass(self):
-        self.inverse_mass = 1/self.mass
+        if self.mass == 0:
+            self.inverse_mass = 0
+        else:
+            self.inverse_mass = 1/self.mass
 
     def apply_verlet(self):
+        if self.inverse_mass == 0:
+            self.old_position = self.position.copy()
+            self.displacement = pg.Vector2(0, 0)
+            return
+
         displacement = (self.position - self.old_position) * self.damping
         self.old_position = self.position.copy()
         self.displacement = displacement

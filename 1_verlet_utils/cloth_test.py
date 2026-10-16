@@ -15,7 +15,7 @@ dt = 1 / 60
 REST_LENGTH = 5
 ROWS = 50
 COLUMNS = 50
-SOLVER_ITERATIONS = 3
+SOLVER_ITERATIONS = 5
 CONSTRAINT_STIFFNESS = 0.8
 RUNNING = True
 
@@ -27,8 +27,12 @@ def initialize_particles():
     for i in range(ROWS):
         particle_row: list[Particle] = []
         for j in range(COLUMNS):
+            if (i==0 and j==0) or (i==0 and j== COLUMNS-1):
+                mass=0
+            else:
+                mass=randint(10, 500)
             position = pg.Vector2(20 + j * REST_LENGTH, 20 + i * REST_LENGTH)
-            particle = Particle(position=position, old_position=position.copy(), gravity=gravity, wind=wind, dt=dt, radius=5, mass=randint(2, 4))
+            particle = Particle(position=position, old_position=position.copy(), gravity=gravity, wind=wind, dt=dt, radius=5, mass=mass)
             particle_row.append(particle)
         particles.append(particle_row)
 
@@ -86,16 +90,16 @@ while RUNNING:
     top_left = bottom_right - pg.Vector2(cloth_width, cloth_height)
     top_right = bottom_right - pg.Vector2(0, cloth_height)
     bottom_left = bottom_right - pg.Vector2(cloth_width, 0)
-    corners = (
-        (0, 0, top_left),
-        (0, COLUMNS - 1, top_right),
-        (ROWS - 1, 0, bottom_left),
-        (ROWS - 1, COLUMNS - 1, bottom_right),
-    )
+    # corners = (
+    #     (0, 0, top_left),
+    #     (0, COLUMNS - 1, top_right),
+    #     (ROWS - 1, 0, bottom_left),
+    #     (ROWS - 1, COLUMNS - 1, bottom_right),
+    # )
 
     for _ in range(SOLVER_ITERATIONS):
         apply_distance_constraints(CONSTRAINT_STIFFNESS)
-        pin_corners(corners)
+        # pin_corners(corners)
 
     for i in range(ROWS):
         for j in range(COLUMNS):
